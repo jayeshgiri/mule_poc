@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="6564f8e2-f2dc-4673-bf97-d7eb339d6a33" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" doc:id="acb9f18a-7f89-47f4-ab48-bb9da63139c0" keyGenerationExpression='#[attributes.headers."productid"]' />
+	<flow name="without_cache_scope" doc:id="cadbf349-df71-45aa-bb04-bd7912aed8a4" >
+		<http:listener doc:name="Listener" doc:id="ee220c15-33e7-4309-826b-b6dc3b13d5d8" config-ref="HTTP_Listener_config" path="/without_cache_scope"/>
+		<logger level="INFO" doc:name="Start" doc:id="6c62c12d-46af-4fb8-b4c2-a4b02e3c6563" message="Start #[now()]"/>
+		<ee:transform doc:name="wait 5 seconds" doc:id="5eef50e8-59e9-45fc-8b17-ddaea1878fd0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::Runtime
+output application/json
+---
+{
+    "product id":  attributes.headers."productid",
+    "product desc": "product description"  
+} wait 5000]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="End" doc:id="42b380bf-c900-4be7-9549-468d4eed3923" message="End #[now()]" />
+	</flow>
+	<flow name="with_cache_scope" doc:id="dc79bf18-14b0-484c-8e5c-b398b7049082" >
+		<http:listener doc:name="Listener" doc:id="3f317f9d-93f7-454d-bc5f-abf23a787b71" config-ref="HTTP_Listener_config" path="/with_cache_scope" />
+		<logger level="INFO" doc:name="Start" doc:id="bacd6dbc-f8af-4b6c-99e6-8e9330bdac9f" message="Start" />
+		<ee:cache doc:name="Cache" doc:id="b7fc751d-01bf-4be6-9a82-c86efdf4eb1d" cachingStrategy-ref="Caching_Strategy">
+			<logger level="INFO" doc:name="Inside Cache" doc:id="f3e83eea-25da-45dd-bf5e-f312e692ba71" message="Inside Cache"/>
+			<ee:transform doc:name="wait 5 seconds" doc:id="7b653e95-26d7-4813-98a7-dfc942e0fa57">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+import * from dw::Runtime
+output application/json
+---
+{
+    "product id":  attributes.headers."productid",
+    "product desc": "product description"  
+} wait 5000]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		</ee:cache>
+		<logger level="INFO" doc:name="End" doc:id="f744858b-9916-4544-a5f8-efc84e0cc0aa" message="End" />
+	</flow>
+</mule>
